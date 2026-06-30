@@ -1,0 +1,43 @@
+# Build outputs
+bin/
+obj/
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio user and workspace state
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
+
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Local configuration and secrets
+*.Development.json
+*.local.json
+.env
+.env.*
+
+# Logs and runtime data
+*.log
+logs/
+DataLog
+DataLog.*
+
+# Publish outputs
+publish/
+artifacts/
+
+# OS files
+.DS_Store
+Thumbs.db

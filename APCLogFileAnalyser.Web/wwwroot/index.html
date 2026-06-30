@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Voltage Monitor</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,-apple-system,sans-serif;background:#111;color:#eee;overflow:hidden;height:100vh;display:flex;flex-direction:column}
+.bar{display:flex;align-items:center;gap:8px;padding:6px 12px;background:#1a1a1a;border-bottom:1px solid #333;flex-shrink:0;flex-wrap:wrap}
+.bar h1{font-size:13px;font-weight:600;color:#0cf;margin-right:auto}
+.bar select,.bar input{background:#222;color:#ddd;border:1px solid #444;border-radius:3px;padding:2px 6px;font-size:12px}
+.bar input[type=number]{width:50px}
+.bar label{font-size:11px;color:#888;display:flex;align-items:center;gap:3px}
+.bar .status{font-size:11px;color:#666;margin-left:auto}
+.bar .live-dot{width:6px;height:6px;border-radius:50%;background:#f44;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.chart-wrap{flex:1;position:relative;min-height:0}
+canvas{width:100%!important;height:100%!important;display:block}
+.loader{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(17,17,17,.9);z-index:10}
+.loader.hidden{display:none}
+.error-banner{display:none;background:#3a1111;color:#ffb3b3;border-bottom:1px solid #743333;padding:8px 12px;font-size:12px;line-height:1.35;flex-shrink:0}
+.error-banner.visible{display:block}
+.spinner{width:24px;height:24px;border:2px solid #333;border-top-color:#0cf;border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.stats{display:flex;gap:1px;background:#1a1a1a;border-top:1px solid #333;flex-shrink:0}
+.stat{flex:1;padding:4px 8px;text-align:center}
+.stat-label{font-size:9px;color:#666;text-transform:uppercase}
+.stat-value{font-size:13px;font-weight:600;color:#ddd}
+.stat-value.good{color:#4c8}
+.stat-value.warn{color:#fa0}
+.stat-value.bad{color:#f44}
+</style>
+</head>
+<body>
+<div class="bar">
+    <h1>Voltage Monitor</h1>
+    <label>Mode
+        <select id="mode">
+            <option value="today">Today</option>
+            <option value="live">Live</option>
+            <option value="days">Days</option>
+            <option value="compare">Compare</option>
+        </select>
+    </label>
+    <label id="days-wrap" style="display:none">Days
+        <select id="days">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="5">5</option>
+            <option value="7" selected>7</option>
+            <option value="14">14</option>
+            <option value="30">30</option>
+            <option value="60">60</option>
+            <option value="90">90</option>
+            <option value="180">180</option>
+            <option value="365">365</option>
+        </select>
+    </label>
+    <label>Smooth
+        <input type="number" id="smooth" value="75" min="0" max="999">
+    </label>
+    <span class="status" id="status">Loading...</span>
+    <span class="live-dot" id="live-dot" style="display:none"></span>
+</div>
+<div class="error-banner" id="error-banner"></div>
+<div class="chart-wrap">
+    <canvas id="chart"></canvas>
+    <div class="loader" id="loader"><div class="spinner"></div></div>
+</div>
+<div class="stats" id="stats">
+    <div class="stat"><div class="stat-label">Last</div><div class="stat-value" id="s-last">--</div></div>
+    <div class="stat"><div class="stat-label">Avg</div><div class="stat-value" id="s-avg">--</div></div>
+    <div class="stat"><div class="stat-label">Max</div><div class="stat-value" id="s-max">--</div></div>
+    <div class="stat"><div class="stat-label">Min</div><div class="stat-value" id="s-min">--</div></div>
+    <div class="stat"><div class="stat-label">Range</div><div class="stat-value" id="s-range">--</div></div>
+    <div class="stat"><div class="stat-label">Compliance</div><div class="stat-value" id="s-comp">--</div></div>
+    <div class="stat"><div class="stat-label">Points</div><div class="stat-value" id="s-pts">--</div></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js" defer></script>
+<script src="app.js" defer></script>
+</body>
+</html>
