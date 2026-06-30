@@ -28,7 +28,10 @@
 
         $('mode').addEventListener('change', onModeChange);
         $('days').addEventListener('change', fetchData);
+        $('smooth').addEventListener('input', updateSmoothValue);
         $('smooth').addEventListener('change', fetchData);
+        $('trendline').addEventListener('change', draw);
+        updateSmoothValue();
 
         // Defer data loading so UI paints first
         requestAnimationFrame(function () {
@@ -181,6 +184,10 @@
         $('s-comp').className = 'stat-value ' + (pct >= 95 ? 'good' : pct >= 80 ? 'warn' : 'bad');
     }
 
+    function updateSmoothValue() {
+        $('smooth-value').textContent = $('smooth').value;
+    }
+
     function draw() {
         if (animFrame) cancelAnimationFrame(animFrame);
         animFrame = requestAnimationFrame(_draw);
@@ -276,6 +283,7 @@
         // Data lines
         if (compareData.length > 1) drawLine(compareData, visibleStart, visibleEnd, tx, ty, 'rgba(255,80,80,0.6)', 1.5 * dpr);
         drawLine(data, visibleStart, visibleEnd, tx, ty, '#0cf', 2 * dpr);
+        if ($('trendline').checked) drawTrendLine(data, visibleStart, visibleEnd, tx, ty, dpr, pad, w);
 
         // Min/Max markers
         if (data.length > 1) {
@@ -299,6 +307,7 @@
         if (hoverIdx >= 0 && hoverIdx < data.length) {
             var pt = data[hoverIdx];
             var px = tx(pt[0]), py = ty(pt[1]);
+            var comparePt = $('mode').value === 'compare' ? findNearestPoint(compareData, pt[0]) : null;
             // Vertical crosshair
             ctx.strokeStyle = 'rgba(255,255,255,0.2)';
             ctx.lineWidth = dpr;
@@ -311,16 +320,23 @@
             ctx.beginPath(); ctx.arc(px, py, 4 * dpr, 0, Math.PI * 2);
             ctx.fillStyle = '#0cf'; ctx.fill();
             ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5 * dpr; ctx.stroke();
+            if (comparePt) {
+                ctx.beginPath(); ctx.arc(tx(comparePt[0]), ty(comparePt[1]), 4 * dpr, 0, Math.PI * 2);
+                ctx.fillStyle = '#f55'; ctx.fill();
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5 * dpr; ctx.stroke();
+            }
             // Tooltip box
             var d = new Date(pt[0]);
             var line1 = d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) + '  ' + d.toLocaleTimeString();
-            var line2 = pt[1].toFixed(2) + 'V';
+            var line2 = comparePt ? 'Today: ' + pt[1].toFixed(2) + 'V' : pt[1].toFixed(2) + 'V';
+            var line3 = comparePt ? 'Yesterday: ' + comparePt[1].toFixed(2) + 'V' : '';
             ctx.font = 'bold ' + (11 * dpr) + 'px system-ui';
             var tw1 = ctx.measureText(line1).width;
             ctx.font = (13 * dpr) + 'px system-ui';
             var tw2 = ctx.measureText(line2).width;
-            var boxW = Math.max(tw1, tw2) + 16 * dpr;
-            var boxH = 38 * dpr;
+            var tw3 = line3 ? ctx.measureText(line3).width : 0;
+            var boxW = Math.max(tw1, tw2, tw3) + 16 * dpr;
+            var boxH = (comparePt ? 54 : 38) * dpr;
             var bx = px + 12 * dpr;
             var by = py - boxH - 8 * dpr;
             // Keep tooltip on screen
@@ -339,7 +355,22 @@
             ctx.fillStyle = '#0cf';
             ctx.font = 'bold ' + (12 * dpr) + 'px system-ui';
             ctx.fillText(line2, bx + 8 * dpr, by + 20 * dpr);
+            if (line3) {
+                ctx.fillStyle = '#f55';
+                ctx.fillText(line3, bx + 8 * dpr, by + 36 * dpr);
+            }
         }
+    }
+
+    function findNearestPoint(pts, time) {
+        if (!pts.length) return null;
+        var lo = 0, hi = pts.length - 1;
+        while (lo < hi) {
+            var mid = (lo + hi) >> 1;
+            if (pts[mid][0] < time) lo = mid + 1; else hi = mid;
+        }
+        if (lo > 0 && Math.abs(pts[lo - 1][0] - time) < Math.abs(pts[lo][0] - time)) lo--;
+        return pts[lo];
     }
 
     function drawLine(pts, tStart, tEnd, tx, ty, color, lw) {
@@ -356,6 +387,61 @@
             if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
         }
         ctx.stroke();
+    }
+
+    function drawTrendLine(pts, tStart, tEnd, tx, ty, dpr, pad, w) {
+        var trend = calculateTrendLine(pts, tStart, tEnd);
+        if (!trend) return;
+
+        ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+        ctx.lineWidth = 1.5 * dpr;
+        ctx.setLineDash([6 * dpr, 4 * dpr]);
+        ctx.beginPath();
+        ctx.moveTo(tx(trend.startTime), ty(trend.startVoltage));
+        ctx.lineTo(tx(trend.endTime), ty(trend.endVoltage));
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = 'rgba(255,255,255,0.75)';
+        ctx.font = (9 * dpr) + 'px system-ui';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('Trend', w - pad.right - 4 * dpr, ty(trend.endVoltage) - 3 * dpr);
+    }
+
+    function calculateTrendLine(pts, tStart, tEnd) {
+        var visible = [];
+        for (var i = 0; i < pts.length; i++) {
+            if (pts[i][0] >= tStart && pts[i][0] <= tEnd) visible.push(pts[i]);
+        }
+        if (visible.length < 2) return null;
+
+        var baseTime = visible[0][0];
+        var sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+        for (var j = 0; j < visible.length; j++) {
+            var x = (visible[j][0] - baseTime) / 60000;
+            var y = visible[j][1];
+            sumX += x;
+            sumY += y;
+            sumXY += x * y;
+            sumXX += x * x;
+        }
+
+        var n = visible.length;
+        var denominator = n * sumXX - sumX * sumX;
+        if (denominator === 0) return null;
+
+        var slope = (n * sumXY - sumX * sumY) / denominator;
+        var intercept = (sumY - slope * sumX) / n;
+        var startTime = visible[0][0];
+        var endTime = visible[visible.length - 1][0];
+
+        return {
+            startTime: startTime,
+            startVoltage: intercept + slope * ((startTime - baseTime) / 60000),
+            endTime: endTime,
+            endVoltage: intercept + slope * ((endTime - baseTime) / 60000)
+        };
     }
 
     function drawMarker(tx, ty, pt, color, label, dpr, pad, w, above) {

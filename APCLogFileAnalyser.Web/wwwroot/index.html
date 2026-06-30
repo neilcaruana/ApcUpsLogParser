@@ -11,9 +11,17 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#111;color:#eee;o
 .bar h1{font-size:13px;font-weight:600;color:#0cf;margin-right:auto}
 .bar select,.bar input{background:#222;color:#ddd;border:1px solid #444;border-radius:3px;padding:2px 6px;font-size:12px}
 .bar input[type=number]{width:50px}
+.bar input[type=range]{width:110px;accent-color:#0cf;padding:0}
 .bar label{font-size:11px;color:#888;display:flex;align-items:center;gap:3px}
+.range-value{font-size:11px;color:#bbb;min-width:24px;text-align:right}
 .bar .status{font-size:11px;color:#666;margin-left:auto}
 .bar .live-dot{width:6px;height:6px;border-radius:50%;background:#f44;animation:pulse 1.5s infinite}
+.switch{position:relative;display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.switch input{position:absolute;opacity:0;pointer-events:none}
+.switch-track{width:28px;height:14px;background:#333;border:1px solid #555;border-radius:999px;position:relative;transition:background .15s,border-color .15s}
+.switch-track::after{content:"";position:absolute;width:10px;height:10px;left:1px;top:1px;background:#888;border-radius:50%;transition:transform .15s,background .15s}
+.switch input:checked+.switch-track{background:#064b5e;border-color:#0cf}
+.switch input:checked+.switch-track::after{transform:translateX(14px);background:#0cf}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 .chart-wrap{flex:1;position:relative;min-height:0}
 canvas{width:100%!important;height:100%!important;display:block}
@@ -58,8 +66,13 @@ canvas{width:100%!important;height:100%!important;display:block}
             <option value="365">365</option>
         </select>
     </label>
-    <label>Smooth
-        <input type="number" id="smooth" value="75" min="0" max="999">
+    <label title="Smooth averages nearby voltage readings to reduce short spikes and noise. Higher values produce a smoother line but hide more detail.">Smooth
+        <input type="range" id="smooth" value="75" min="0" max="999" step="1">
+        <span class="range-value" id="smooth-value">75</span>
+    </label>
+    <label class="switch" title="Trend shows the overall voltage direction for the currently visible chart range using a dashed linear trendline.">Trend
+        <input type="checkbox" id="trendline" checked>
+        <span class="switch-track" aria-hidden="true"></span>
     </label>
     <span class="status" id="status">Loading...</span>
     <span class="live-dot" id="live-dot" style="display:none"></span>
