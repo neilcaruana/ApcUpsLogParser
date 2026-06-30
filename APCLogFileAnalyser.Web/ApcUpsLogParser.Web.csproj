@@ -11,6 +11,7 @@
     <PublishSingleFile>false</PublishSingleFile>
     <!-- Set application icon for produced EXE -->
     <ApplicationIcon>icon.ico</ApplicationIcon>
+    <UserSecretsId>ac75f3ba-e6f1-4413-8db8-94baab3b9a2c</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

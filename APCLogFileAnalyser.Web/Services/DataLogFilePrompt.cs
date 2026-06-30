@@ -20,11 +20,7 @@ internal static class DataLogFilePrompt
             return;
         }
 
-        var settingsFile = string.Equals(environmentName, Environments.Production, StringComparison.OrdinalIgnoreCase)
-            ? "appsettings.json"
-            : $"appsettings.{environmentName}.json";
-
         Console.WriteLine($"Configured APC UPS log file was not found: {filePath}");
-        Console.WriteLine($"Set '{DataFilePathConfigurationKey}' in {settingsFile} to the full APC UPS log file path.");
+        Console.WriteLine($"Set '{DataFilePathConfigurationKey}' in user secrets, or in the appsettings file for the {environmentName} environment, to the full APC UPS log file path.");
     }
 }

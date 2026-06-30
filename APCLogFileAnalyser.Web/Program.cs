@@ -3,6 +3,7 @@ using ApcUpsLogParser.Web.Hubs;
 using ApcUpsLogParser.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.AddUserSecrets<Program>(optional: true, reloadOnChange: true);
 
 // Check if running under IIS
 var isIIS = Environment.GetEnvironmentVariable("APP_POOL_ID") != null;

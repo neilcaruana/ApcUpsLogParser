@@ -21,7 +21,7 @@ namespace ApcUpsLogParser.Common.Services
                 if (!File.Exists(Constants.DataFilePath))
                 {
                     response.HasError = true;
-                    response.ErrorMessage = $"The configured APC UPS log file was not found at '{Constants.DataFilePath}'. Set 'DataFilePath' in the appsettings file to the full APC UPS log file path.";
+                    response.ErrorMessage = $"The configured APC UPS log file was not found at '{Constants.DataFilePath}'. Set 'DataFilePath' in user secrets or appsettings to the full APC UPS log file path.";
                     Console.WriteLine(response.ErrorMessage);
                     return response;
                 }
